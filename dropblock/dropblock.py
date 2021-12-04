@@ -21,6 +21,9 @@ class DropBlock2D(nn.Module):
 
     .. _DropBlock: A regularization method for convolutional networks:
        https://arxiv.org/abs/1810.12890
+    Changes in this folk:
+        1.
+        2.
 
     """
 
