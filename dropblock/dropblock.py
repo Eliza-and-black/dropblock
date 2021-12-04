@@ -23,7 +23,7 @@ class DropBlock2D(nn.Module):
        https://arxiv.org/abs/1810.12890
        
     Changes in this folk(only in DropBlock2D):
-        1.Make gamma consistent with the paper, and correlatively let the center of mask stay in the shaded green region of the original paper;
+        1.Make gamma consistent with the original paper, and correlatively let the center of mask stay in the shaded green region of the original paper;
         2.Make each feature channel has its DropBlock mask as the original paper propose.
 
     """
