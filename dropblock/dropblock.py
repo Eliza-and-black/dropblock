@@ -21,9 +21,10 @@ class DropBlock2D(nn.Module):
 
     .. _DropBlock: A regularization method for convolutional networks:
        https://arxiv.org/abs/1810.12890
-    Changes in this folk:
-        1.
-        2.
+       
+    Changes in this folk(only in DropBlock2D):
+        1.Make gamma consistant with the paper, and correlatively let the center of mask stay in the shaded green region of the paper;
+        2.Make each feature channel has its DropBlock mask as the paper propose.
 
     """
 
@@ -46,8 +47,12 @@ class DropBlock2D(nn.Module):
             gamma = self._compute_gamma(x)
 
             # sample mask
-            mask = (torch.rand(x.shape[0], *x.shape[2:]) < gamma).float()
-
+            mask_center = (torch.rand(x.shape[0], x.shape[1], x.shape[2] - self.block_size + 1, x.shape[3] - self.block_size + 1) < gamma).float()
+            
+            mask = (nn.ZeroPad2d(self.block_size // 2))(mask_center)
+            if self.block_size % 2 == 0:
+                mask = mask[:, :, :-1, :-1]
+                
             # place mask on input device
             mask = mask.to(x.device)
 
@@ -55,7 +60,7 @@ class DropBlock2D(nn.Module):
             block_mask = self._compute_block_mask(mask)
 
             # apply block mask
-            out = x * block_mask[:, None, :, :]
+            out = x * block_mask
 
             # scale output
             out = out * block_mask.numel() / block_mask.sum()
@@ -63,7 +68,7 @@ class DropBlock2D(nn.Module):
             return out
 
     def _compute_block_mask(self, mask):
-        block_mask = F.max_pool2d(input=mask[:, None, :, :],
+        block_mask = F.max_pool2d(input=mask,
                                   kernel_size=(self.block_size, self.block_size),
                                   stride=(1, 1),
                                   padding=self.block_size // 2)
@@ -71,12 +76,13 @@ class DropBlock2D(nn.Module):
         if self.block_size % 2 == 0:
             block_mask = block_mask[:, :, :-1, :-1]
 
-        block_mask = 1 - block_mask.squeeze(1)
+        block_mask = 1 - block_mask
 
         return block_mask
 
     def _compute_gamma(self, x):
-        return self.drop_prob / (self.block_size ** 2)
+        return self.drop_prob * x.shape[2] * x.shape[3] / ((self.block_size ** 2) * (x.shape[2] - self.block_size + 1) * (x.shape[3] - self.block_size + 1))
+    
 
 
 class DropBlock3D(DropBlock2D):
